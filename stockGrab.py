@@ -1,25 +1,31 @@
-import urllib2,os,sys
+import urllib2,os,sys,threading,collections,subprocess 
 from time import gmtime, strftime
 
-class CrawlData:
+class CrawlData(threading.Thread):
+	def __init__(self,threadId,dataLst):
+		threading.Thread.__init__(self)
+		self.threadId = threadId + 1
+		self.dataLst = dataLst
+		self.status = 0.0
+
 	def run(self):
-		self.readInStockData()
-		self.length = len(self.stockData)
+		print('Thread {0} begin'.format(self.threadId))
+		self.length = len(self.dataLst)
 		self.getLinkData()
 
-	def showThePercentage(self):
-		currentStarNum = int(30*self.index/self.length)
-		star = "*"*(currentStarNum + 1)
-		#print(star,currentStarNum,self.length)
-		sys.stdout.write('Working... '+str(int(1000*self.index/self.length)/10.0)+'% '+star+'\r')
-    	sys.stdout.flush()
-
-
-	def readInStockData(self):
-		self.stockData = []
-		with open("companylist.txt","r") as f:
-			for company in f:
-				self.stockData.append(company.strip())
+	def getLinkData(self):
+		fixedLinkPre = "http://finance.yahoo.com/q/ks?s="
+		fixedLinkPost = "+Key+Statistics"
+		for self.index,self.stock in enumerate(self.dataLst):
+			link = fixedLinkPre+self.stock+fixedLinkPost
+			response = urllib2.urlopen(link)
+			self.html = response.read()
+			response.close()
+			self.writeFile()
+			self.status = 1.0*(self.index+1)/len(self.dataLst)
+	
+	def getThreadInfo(self):
+		return (self.threadId,self.status)
 
 	def writeFile(self):
 		dirName = os.path.dirname(os.path.abspath(__file__))
@@ -29,25 +35,47 @@ class CrawlData:
 
 		if not os.path.exists(path):
 			os.makedirs(path)
-
+			
 		fileName = os.path.join(path,(self.stock + ".txt"))
 		try:
 			file(fileName,"w").write(self.html)
 		except:
 			print("Writing failure on %s" %self.stock)
-
-	def getLinkData(self):
-		fixedLinkPre = "http://finance.yahoo.com/q/ks?s="
-		fixedLinkPost = "+Key+Statistics"
-		for self.index,self.stock in enumerate(self.stockData):
-			link = fixedLinkPre+self.stock+fixedLinkPost
-			response = urllib2.urlopen(link)
-			self.0
-			response.close()
-			self.writeFile()
-			self.showThePercentage()
 			
+class ReadData:
+	def readInStockData(self):
+		stockData = []
+		with open("companylist.txt","r") as f:
+			for company in f:
+				stockData.append(company.strip())
+		return stockData
+
+def showThePercentage(process):
+	subprocess.call('cls',shell=True)
+	for threadId,status in enumerate(process):
+		currentStarNum = int(30*status)
+		star = ("*"*(currentStarNum + 1)).ljust(30)
+		sys.stdout.write('{0}:{1} ...[{3}] {2}%\n'.format('Thread ID:',threadId+1,int(1000*status)/10.0,star))
+	sys.stdout.flush()
+
 
 if __name__ == "__main__":
-	getData = CrawlData()
-	getData.run()
+	threadNum = 8
+	read = ReadData()
+	dataLst = read.readInStockData()
+	increament,start = len(dataLst)//8 , 0
+	threadLst = []
+
+	for i in range(threadNum):
+		threadLst.append(CrawlData(i,dataLst[start:(start+increament)]))
+		start += increament
+	for thread in threadLst:
+		thread.start()
+	
+	while any(thread.is_alive() for thread in threadLst):
+		process = []
+		for thread in threadLst:
+			threadId,status = thread.getThreadInfo()
+			process.append(status)
+		showThePercentage(process)
+	print('All thread done!')
