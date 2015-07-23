@@ -1,4 +1,4 @@
-import urllib2,os,sys,threading,collections,subprocess 
+import urllib2,os,sys,threading,collections,subprocess
 from time import gmtime, strftime
 from BeautifulSoup import BeautifulSoup
 
@@ -35,7 +35,9 @@ class CrawlData(threading.Thread):
 		soup = BeautifulSoup(self.html)
 		tagName = soup.findAll('td',{'class':'yfnc_tablehead1'})
 		tagValue = soup.findAll('td',{'class':'yfnc_tabledata1'})
-		self.cleanData = list(map(lambda x: x[0].text + ' ' + x[1].text),zip(tagName,tagValue))
+		print(zip(tagName,tagValue))
+		if len(zip(tagName,tagValue)) > 10:
+			self.cleanData = list(map(lambda x: x[0].text + ' ' + x[1].text),zip(tagName,tagValue))
 		'''
 		for item in zip(tagName,tagValue):
 			value = item[0].text+' '+item[1].text
@@ -77,7 +79,7 @@ class ReadData:
 		return stockData
 
 def showThePercentage(process):
-	subprocess.call('cls',shell=True)
+	#subprocess.call('cls',shell=True)
 	for threadId,status in enumerate(process):
 		currentStarNum = int(30*status)
 		star = ("*"*(currentStarNum + 1)).ljust(30)
@@ -104,4 +106,5 @@ if __name__ == "__main__":
 			threadId,status = thread.getThreadInfo()
 			process.append(status)
 		showThePercentage(process)
+
 	print('All thread done!')
