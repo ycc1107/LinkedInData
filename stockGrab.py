@@ -1,5 +1,7 @@
 import urllib2,os,sys,threading,collections,subprocess 
 from time import gmtime, strftime
+from BeautifulSoup import BeautifulSoup
+
 
 class CrawlData(threading.Thread):
 	def __init__(self,threadId,dataLst):
@@ -21,26 +23,50 @@ class CrawlData(threading.Thread):
 			response = urllib2.urlopen(link)
 			self.html = response.read()
 			response.close()
+			self.cleanHtml()
 			self.writeFile()
 			self.status = 1.0*(self.index+1)/len(self.dataLst)
 	
 	def getThreadInfo(self):
 		return (self.threadId,self.status)
 
+	def cleanHtml(self):
+		self.cleanData = []
+		soup = BeautifulSoup(self.html)
+		tagName = soup.findAll('td',{'class':'yfnc_tablehead1'})
+		tagValue = soup.findAll('td',{'class':'yfnc_tabledata1'})
+		self.cleanData = list(map(lambda x: x[0].text + ' ' + x[1].text),zip(tagName,tagValue))
+		'''
+		for item in zip(tagName,tagValue):
+			value = item[0].text+' '+item[1].text
+			if value:
+				self.cleanData.append(value)
+		'''
 	def writeFile(self):
-		dirName = os.path.dirname(os.path.abspath(__file__))
-		dirName = os.path.join(dirName,"Data")
-		folder = strftime("%Y-%m-%d", gmtime()) 
-		path = os.path.join(dirName,folder)
+		if len(self.cleanData):
+			dirName = os.path.dirname(os.path.abspath(__file__))
+			dirName = os.path.join(dirName,"Data")
+			folder = strftime("%Y-%m-%d", gmtime()) 
+			path = os.path.join(dirName,folder)
 
-		if not os.path.exists(path):
-			os.makedirs(path)
+			if not os.path.exists(path):
+				os.makedirs(path)
+				
+			fileName = os.path.join(path,(self.stock + ".txt"))
+			try:
+				with open(fileName,"w") as f:
+					for line in self.cleanData:
+						print >> f,line
+			except:
+				print("Writing failure on %s" %self.stock)
 			
-		fileName = os.path.join(path,(self.stock + ".txt"))
-		try:
-			file(fileName,"w").write(self.html)
-		except:
-			print("Writing failure on %s" %self.stock)
+class ReadData:
+	def readInStockData(self):
+		stockData = []
+		with open("companylist.txt","r") as f:
+			for company in f:
+				stockData.append(company.strip())
+		return stockData
 			
 class ReadData:
 	def readInStockData(self):
