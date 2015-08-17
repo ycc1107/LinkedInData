@@ -1,18 +1,23 @@
 import matplotlib.pyplot as plt
+import numpy as np
+import csv
+lst = []
+with open('MeanStdData.txt','r') as f:
+    reader = csv.reader(f)
+    for line in reader:
+        a,b,c = line
+        a = a.strip(' ')[2:-1]
+        b = b.strip(' ')[1:]
+        c = c.strip(' ')[:-3]
+        lst.append([a,float(b),float(c)])
 
-
-
-def main():
-    mean,std = [],[]
-    with open('MeanStdData.txt','r') as f:
-        for line in f:
-            mean.append(float(line.split(',')[1][5:]))
-            std.append(float(line.split(',')[2][1:-3]))
-            
-    plt.plot(mean,std,'ro')
-    plt.show()
-            
-    print(len(mean))
-
-
-if __name__ =='__main__':main()
+x,y, name =[],[],[]
+for line in lst:
+    if isinstance(line[1],float) and isinstance(line[2],float):
+        if 1 > line[1] > 0 and 5 >line[2] > 0:
+            x.append(line[1])
+            y.append(line[2])
+            name.append(line[0])
+        
+plt.scatter(x,y)
+plt.show()
