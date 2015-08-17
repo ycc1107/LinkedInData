@@ -21,7 +21,7 @@ class DataMeanStd:
                 yield(line.strip())
 
     def getCsvFiles(self,infoObj):
-        res  = {}
+        res  = []
         paraLst = infoObj.getLinkPara()
      
         for symbol in  self.getCompanyLst():
@@ -33,17 +33,18 @@ class DataMeanStd:
                 f = csv.reader(response)
                 for i,line in enumerate(f):
                     if i == 0: continue
+                    if float(line[-1]) < 1: break
                     numLst.append(float(line[-1]))
-                numLst = [ float(i[0])/float(i[1]) -1 for i in zip(numLst[0:],numLst[1:])]
-                price = numpy.array(numLst)
-                res[symbol] = [numpy.mean(price),numpy.std(price)]
+                if numLst:
+                    numLst = [ float(i[0])/float(i[1]) -1 for i in zip(numLst[0:],numLst[1:])]
+                    price = numpy.array(numLst)
+                    res.append([symbol,numpy.mean(price),numpy.std(price)])
             except:
                 print('error for {0} link'.format(symbol))
         #npArray = numpy.array(numLst)
         with open('MeanStdData.txt','w') as f:
-            for k,v in res.items():
-                print >> f,(k,v)
-                return res
+            for line in res:
+                print >> f,line
                 
     def run(self):
         infoObj = LinkInfo.infoObj()
